@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Rubik's Cube</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #1a1a2e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e6e6e6;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        #inputForm {
+            text-align: center;
+            margin-bottom: 30px;
+            background-color: rgba(30, 30, 60, 0.7);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        #inputForm h1 {
+            margin-top: 0;
+            font-size: 1.8rem;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        
+        #cubeSize {
+            width: 60px;
+            padding: 8px 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2d2d44;
+            color: white;
+            text-align: center;
+            margin-right: 10px;
+            transition: all 0.3s;
+        }
+        
+        #cubeSize:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #4d4dff;
+        }
+        
+        .container {
+            display: flex;
+            align-items: center;
+            position: relative;
+            width: 100%;
+            padding-left: 25%;
+        }
+        
+        .scene {
+            width: 400px;
+            height: 400px;
+            perspective: 1200px;
+            display: none;
+            transition: perspective 0.5s;
+        }
+        
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-45deg) rotateY(0deg);
+            transition: transform 0.5s;
+        }
+        
+        .face {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            display: grid;
+            border: 2px solid #000;
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .face div {
+            border: 1px solid #000;
+            position: relative;
+            background-color: inherit;
+            transition: background-color 0.3s, transform 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .face div.highlight {
+            background-color: rgba(255, 255, 0, 0.7);
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+        }
+        
+        #inputForm button, #shuffleButton, #playButton {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(to bottom, #4a4a8a, #2d2d5a);
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        #inputForm button:hover, #shuffleButton:hover, #playButton:hover {
+            background: linear-gradient(to bottom, #5a5aa0, #3d3d7a);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        #inputForm button:active, #shuffleButton:active, #playButton:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        #buttonContainer {
+            position: absolute;
+            right: 15%;
+            top: 40%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            background-color: rgba(30, 30, 60, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        #shuffleButton, #playButton {
+            width: 120px;
+            text-align: center;
+        }
+        
+        #shuffleButton {
+            display: none;
+            background: linear-gradient(to bottom, #ff6b6b, #c44d4d);
+        }
+        
+        #shuffleButton:hover {
+            background: linear-gradient(to bottom, #ff8080, #d45a5a);
+        }
+        
+        #playButton {
+            display: none;
+            background: linear-gradient(to bottom, #4caf50, #388e3c);
+        }
+        
+        #playButton:hover {
+            background: linear-gradient(to bottom, #5dc264, #429846);
+        }
+        
+        #actionButtonsContainer {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .actionRow {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .actionButton {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            opacity: 1;
+            transform: translateY(0);
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(to bottom, #3a3a6a, #2a2a4a);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .actionButton:hover {
+            background: linear-gradient(to bottom, #4a4a8a, #3a3a6a);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .actionButton:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        #laneOptionsContainer {
+            display: block;
+            margin-top: 10px;
+        }
+        
+        #laneInput {
+            width: 50px;
+            padding: 8px;
+            font-size: px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2d2d44;
+            color: white;
+            margin-left: 1px;
+            text-align: left;
+            transition: all 0.3s;
+        }
+        
+        #laneInput:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #4d4dff;
+        }
+        
+        #moveCounterContainer {
+            margin-top: 15px !important;
+            margin-bottom: 15px !important;
+        }
+        
+        #moveCounterBox {
+            background-color: #2d2d44;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        #pathToSolveButton {
+            background: linear-gradient(to bottom, #3f51b5, #303f9f);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        #pathToSolveButton:hover {
+            background: linear-gradient(to bottom, #4d5ec1, #3949ab);
+            transform: translateY(-2px);
+        }
+        
+        #movePathDisplay {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            max-width: 300px;
+            max-height: 100px;
+            overflow-y: auto;
+            word-wrap: break-word;
+            color: #ffeb3b;
+            font-family: monospace;
+            font-size: 12px;
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .container {
+                padding-left: 15%;
+            }
+            
+            #buttonContainer {
+                right: 10%;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                padding-left: 5%;
+            }
+            
+            #buttonContainer {
+                right: 5%;
+            }
+            
+            .scene {
+                width: 350px;
+                height: 350px;
+            }
+            
+            .face {
+                width: 350px;
+                height: 350px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                height: auto;
+                padding: 20px 0;
+            }
+            
+            .container {
+                flex-direction: column;
+                padding-left: 0;
+            }
+            
+            #buttonContainer {
+                position: relative;
+                right: auto;
+                top: auto;
+                transform: none;
+                margin-top: 30px;
+                width: 90%;
+                max-width: 400px;
+            }
+            
+            .scene {
+                margin: 0 auto;
+            }
+        }
+        
+        #enterLaneButton {
+            display: inline-flex;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        </style>
+</head>
+
+<body>
+    <div id="inputForm">
+        <h1>Enter the size of the Rubik's Cube</h1>
+        <input type="number" id="cubeSize" min="2" max="100" value="3" />
+        <button onclick="generateCube()">Generate Cube</button>
+    </div>
+
+    <div class="container">
+        <div class="scene">
+            <div class="cube" id="cube"></div>
+        </div>
+    </div>
+
+    <div id="buttonContainer">
+        <button id="shuffleButton">Shuffle</button>
+        <button id="playButton" onclick="startGame()">Play</button>
+            
+        <div id="actionButtonsContainer">
+            <div class="actionRow">
+                <button class="actionButton" id="rMoveButton" onclick="rMove()">R</button>
+                <button class="actionButton" id="rpMoveButton" onclick="lMove()">L</button>
+                <button class="actionButton" id="dMoveButton" onclick="dMove()">D</button>
+                <button class="actionButton" id="dpMoveButton" onclick="uMove()">U</button>
+                <button class="actionButton" id="fMoveButton" onclick="fMove()">F</button>
+                <button class="actionButton" id="fpMoveButton" onclick="bMove()">B</button>
+            </div>
+            <div class="actionRow">
+                <button class="actionButton" id="lMoveButton" onclick="rpMove()">R'</button>
+                <button class="actionButton" id="lpMoveButton" onclick="lpMove()">L'</button>
+                <button class="actionButton" id="uMoveButton" onclick="dpMove()">D'</button>
+                <button class="actionButton" id="upMoveButton" onclick="upMove()">U'</button>
+                <button class="actionButton" id="bMoveButton" onclick="fpMove()">F'</button>
+                <button class="actionButton" id="bpMoveButton" onclick="bpMove()">B'</button>
+            </div>
+            <div class="actionRow">
+                <div id="laneOptionsContainer">
+                    <label for="laneInput">Lane Number:</label>
+                    <input type="number" id="laneInput" min="0" placeholder="Lane Number">
+                    <button class="actionButton" onclick="enterLane()">Enter</button>
+                    <br><br>
+                    <div id="moveCounterContainer" style="display: flex; align-items: center; gap: 10px; justify-content: center;">
+                        <span style="font-size: 16px;">No. of Moves:</span>
+                        <div id="moveCounterBox" style="background-color: white; color: black; padding: 5px 15px; border-radius: 5px; font-weight: bold;">0</div>
+                    </div>
+                    <button id="pathToSolveButton">Path to Solve</button>
+                    <span id="movePathDisplay" style="margin-left: 10px; color:violet;"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Other JavaScript functions remain the same
+        let cubeSize;
+        let isDragging = false;
+        let startX, startY, currentX = -45, currentY = -30;
+        let laneValue = 0;
+    
+        const colors = ["red", "green", "yellow", "white", "blue", "orange"];
+    
+        function generateCube() 
+        {
+            cubeSize = document.getElementById("cubeSize").value;
+            const cube = document.getElementById("cube");
+            const scene = document.querySelector(".scene");
+            const shuffleButton = document.getElementById("shuffleButton");
+            const playButton = document.getElementById('playButton');
+        
+            cube.innerHTML = ''; // Clear any existing cube faces
+    
+            const faces = ["top", "front", "right", "left", "back", "bottom"];
+            const transformations = [
+                "rotateX(90deg) translateZ(200px)", // top
+                "translateZ(200px)", // front
+                "rotateY(90deg) translateZ(200px)", // right
+                "rotateY(-90deg) translateZ(200px)", // left
+                "rotateY(180deg) translateZ(200px)", // back
+                "rotateX(-90deg) translateZ(200px)", // bottom
+            ];
+    
+            faces.forEach((face, index) => {
+                const faceElement = document.createElement("div");
+                faceElement.className = `face ${face}`;
+                faceElement.style.transform = transformations[index];
+                faceElement.style.gridTemplateRows = `repeat(${cubeSize}, 1fr)`;
+                faceElement.style.gridTemplateColumns = `repeat(${cubeSize}, 1fr)`;
+    
+                for (let i = 0; i < cubeSize * cubeSize; i++) {
+                    const block = document.createElement("div");
+                    block.dataset.face = face;
+                    block.dataset.index = i;
+                    faceElement.appendChild(block);
+                }
+    
+                cube.appendChild(faceElement);
+            });
+    
+            document.addEventListener("DOMContentLoaded", () => {
+                const scene = document.querySelector(".scene");
+                const cube = document.querySelector(".cube");
+        
+                document.addEventListener("mousedown", (e) => {
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                });
+    
+                document.addEventListener("mousemove", (e) => {
+                    if (!isDragging) return;
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    rotateCube(dx, dy);
+                });
+      
+                document.addEventListener("mouseup", () => {isDragging = false;});
+                document.addEventListener("mouseleave", () => {isDragging = false;});
+            });
+      
+            function rotateCube(dx, dy) {
+                currentX += dx;
+                currentY -= dy;
+                const cube = document.querySelector(".cube");
+                cube.style.transform = `rotateX(${currentY}deg) rotateY(${currentX}deg)`;
+            }
+    
+            document.getElementById('inputForm').style.display = 'none';
+            scene.style.display = 'block';
+            shuffleButton.style.display = 'block';
+            playButton.style.display = 'block';
+    
+            assignInitialColors();
+            setupLaneOptions();
+        }
+    
+        function assignInitialColors() {
+            const blocks = document.querySelectorAll('.face div');
+            blocks.forEach((block, index) => { block.style.backgroundColor = colors[Math.floor(index / (cubeSize * cubeSize)) % colors.length];});
+        }
+    
+        function startDrag(event) {
+            isDragging = true;
+            startX = event.clientX || event.touches[0].clientX;
+            startY = event.clientY || event.touches[0].clientY;
+        }
+      
+        function drag(event) {
+            if (!isDragging) return;
+            const x = event.clientX || event.touches[0].clientX;
+            const y = event.clientY || event.touches[0].clientY;
+            const deltaX = x - startX;
+            const deltaY = y - startY;
+            startX = x;
+            startY = y;
+      
+            currentX += deltaX * 0.1;
+            currentY += deltaY * 0.1;
+      
+            const cube = document.getElementById("cube");
+            cube.style.transform = `rotateX(${currentY}deg) rotateY(${currentX}deg)`;
+        }
+      
+        function stopDrag() {
+            isDragging = false;
+        }
+      
+        // Attach event listeners for mouse/touch interactions
+        document.addEventListener("mousedown", startDrag);
+        document.addEventListener("mousemove", drag);
+        document.addEventListener("mouseup", stopDrag);
+        document.addEventListener("touchstart", startDrag);
+        document.addEventListener("touchmove", drag);
+        document.addEventListener("touchend", stopDrag);
+      
+        function rotateLayer(face, direction) {
+            const faceElements = document.querySelector(`.${face}`).children;
+            let blocks = Array.from(faceElements);
+      
+            // Rotate blocks visually based on direction (clockwise or counterclockwise)
+            if (direction === "clockwise") {
+              blocks.unshift(blocks.pop());
+            } 
+            else {
+              blocks.push(blocks.shift());
+            }
+            blocks.forEach((block, i) => { faceElements[i].style.backgroundColor = block.style.backgroundColor;});
+        }
+      
+        // Buttons to rotate layers of the cube
+        document.getElementById("rotateFrontClockwise").addEventListener("click", function () {rotateLayer("front", "clockwise");});
+        document.getElementById("rotateFrontCounterclockwise").addEventListener("click", function () {rotateLayer("front", "counterclockwise");});
+        document.getElementById("rotateTopClockwise").addEventListener("click", function () {rotateLayer("top", "clockwise");});
+        document.getElementById("rotateTopCounterclockwise").addEventListener("click", function () {rotateLayer("top", "counterclockwise");});
+    
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .scene {
+              width: 400px;
+              height: 400px;
+              perspective: 800px;
+            }
+    
+            #cube {
+              width: 400px;
+              height: 400px;
+              position: relative;
+              transform-style: preserve-3d;
+              transform: rotateX(-30deg) rotateY(-45deg);
+              transition: transform 0.3s;
+            }
+    
+            .face {
+              position: absolute;
+              width: 100%;
+              height: 100%;
+              display: grid;
+              backface-visibility: hidden;
+            }
+    
+            .face div {
+              border: 1px solid black;
+            }
+    
+            .moveButtons {
+              display: flex;
+              justify-content: space-between;
+              margin-top: 20px;
+            }
+    
+            .moveButtons button {
+              padding: 10px;
+              font-size: 16px;
+            }
+        `;
+        
+        document.head.appendChild(style);
+    
+        function rMove(laneValue) {
+            const faceElements = {
+                top: document.querySelector(".top").children,
+                front: document.querySelector(".front").children,
+                bottom: document.querySelector(".bottom").children,
+                back: document.querySelector(".back").children,
+                right: document.querySelector(".right").children,
+            };
+        
+            if (laneValue === 0) {
+                const faceIndices = {
+                    top: Array.from(faceElements.top).filter((_, index) => index % cubeSize === cubeSize - 1),
+                    front: Array.from(faceElements.front).filter((_, index) => index % cubeSize === cubeSize - 1),
+                    bottom: Array.from(faceElements.bottom).filter((_, index) => index % cubeSize === cubeSize - 1),
+                    back: Array.from(faceElements.back).filter((_, index) => index % cubeSize === 0).reverse(),
+                    right: Array.from(faceElements.right),
+                };
+        
+                // 1️⃣ Extract colors from the right face
+                let rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+        
+                // 2️⃣ Convert the flat array into a 2D matrix
+                let rightMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    rightMatrix.push(rightColors.slice(i * cubeSize, (i + 1) * cubeSize));
+                }
+        
+                // 3️⃣ Rotate the matrix 90° clockwise
+                let rotatedMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    rotatedMatrix.push([]);
+                    for (let j = 0; j < cubeSize; j++) {
+                        rotatedMatrix[i][j] = rightMatrix[cubeSize - 1 - j][i];
+                    }
+                }
+        
+                // 4️⃣ Flatten the rotated matrix and apply it back to the right face
+                let newRightColors = rotatedMatrix.flat();
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = newRightColors[index]);
+        
+                // 5️⃣ Rotate the adjacent layers
+                const topColors = faceIndices.top.map(block => block.style.backgroundColor);
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+
+                faceIndices.top.forEach((block, index) => (block.style.backgroundColor = frontColors[index]));
+                faceIndices.front.forEach((block, index) => (block.style.backgroundColor = bottomColors[index]));
+                faceIndices.bottom.forEach((block, index) => (block.style.backgroundColor = backColors[index]));
+                faceIndices.back.forEach((block, index) => (block.style.backgroundColor = topColors[index]));
+            }
+        
+            if (laneValue > 0) {
+                const faceIndices = {
+                    top: Array.from(faceElements.top).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)),
+                    front: Array.from(faceElements.front).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)),
+                    bottom: Array.from(faceElements.bottom).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)),
+                    back: Array.from(faceElements.back).filter((_, index) => index % cubeSize === laneValue).reverse(),
+                };
+        
+                const topColors = faceIndices.top.map(block => block.style.backgroundColor);
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+        
+                faceIndices.top.forEach((block, index) => (block.style.backgroundColor = frontColors[index]));
+                faceIndices.front.forEach((block, index) => (block.style.backgroundColor = bottomColors[index]));
+                faceIndices.bottom.forEach((block, index) => (block.style.backgroundColor = backColors[index]));
+                faceIndices.back.forEach((block, index) => (block.style.backgroundColor = topColors[index]));
+            }
+        }
+        
+        function rMovePrime(laneValue) {
+            const faceElements = {
+                top: document.querySelector(".top").children,
+                front: document.querySelector(".front").children,
+                bottom: document.querySelector(".bottom").children,
+                back: document.querySelector(".back").children,
+                right: document.querySelector(".right").children,
+            };
+
+            if (laneValue === 0) {
+                const faceIndices = {
+                    top: Array.from(faceElements.top).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)), // Correct for right side
+                    front: Array.from(faceElements.front).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)), // Correct for right side
+                    bottom: Array.from(faceElements.bottom).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)), // Correct for right side
+                    back: Array.from(faceElements.back).filter((_, index) => index % cubeSize === laneValue).reverse(), // Adjust back face
+                    right: Array.from(faceElements.right),
+                };
+            
+                let rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+                
+                let rightMatrix = [];
+                    for (let i = 0; i < cubeSize; i++) {
+                        rightMatrix.push(rightColors.slice(i * cubeSize, (i + 1) * cubeSize));
+                    }
+
+                // Rotate the matrix 90° counterclockwise
+                let rotatedMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    rotatedMatrix.push([]);
+                    for (let j = 0; j < cubeSize; j++) {
+                        rotatedMatrix[i][j] = rightMatrix[j][cubeSize - 1 - i];
+                    }
+                }
+
+                // Flatten the rotated matrix and apply it back to the right face
+                let newRightColors = rotatedMatrix.flat();
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = newRightColors[index]);
+            
+                // Rotate the side faces around the right face (counterclockwise)
+                const topColors = faceIndices.top.map((block) => block.style.backgroundColor);
+                const frontColors = faceIndices.front.map((block) => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map((block) => block.style.backgroundColor);
+                const backColors = faceIndices.back.map((block) => block.style.backgroundColor);
+                
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = backColors[index]);
+                faceIndices.front.forEach((block, index) => block.style.backgroundColor = topColors[index]);
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = frontColors[index]);
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = bottomColors[index]);
+            }
+
+            if (laneValue > 0){
+                const faceIndices = {
+                    top: Array.from(faceElements.top).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)), // Select the right lane
+                    front: Array.from(faceElements.front).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)), // Select the right lane
+                    bottom: Array.from(faceElements.bottom).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)), // Select the right lane
+                    back: Array.from(faceElements.back).filter((_, index) => index % cubeSize === laneValue).reverse(), // Adjust back lane
+                };
+            
+                // Rotate the side layers adjacent to the right face (counterclockwise)
+                const topColors = faceIndices.top.map((block) => block.style.backgroundColor);
+                const frontColors = faceIndices.front.map((block) => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map((block) => block.style.backgroundColor);
+                const backColors = faceIndices.back.map((block) => block.style.backgroundColor);
+
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = backColors[index]);
+                faceIndices.front.forEach((block, index) => block.style.backgroundColor = topColors[index]);
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = frontColors[index]);
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = bottomColors[index]);
+              
+            }
+        }
+        
+        function lMove(laneValue) {
+            const faceElements = {
+                top: document.querySelector(".top").children,
+                front: document.querySelector(".front").children,
+                bottom: document.querySelector(".bottom").children,
+                back: document.querySelector(".back").children,
+                left: document.querySelector(".left").children,
+            };
+        
+            if (laneValue === 0) {
+                const faceIndices = {
+                    top: Array.from(faceElements.top).filter((_, index) => index % cubeSize === laneValue),
+                    front: Array.from(faceElements.front).filter((_, index) => index % cubeSize === laneValue),
+                    bottom: Array.from(faceElements.bottom).filter((_, index) => index % cubeSize === laneValue),
+                    back: Array.from(faceElements.back).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)).reverse(),
+                    left: Array.from(faceElements.left),
+                };
+        
+                // 1️⃣ Extract colors from the left face
+                let leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+        
+                // 2️⃣ Convert to a 2D matrix
+                let leftMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    leftMatrix.push(leftColors.slice(i * cubeSize, (i + 1) * cubeSize));
+                }
+        
+                // 3️⃣ Rotate the matrix 90° clockwise
+                let rotatedMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    rotatedMatrix.push([]);
+                    for (let j = 0; j < cubeSize; j++) {
+                        rotatedMatrix[i][j] = leftMatrix[j][cubeSize - 1 - i];   
+                    }
+                }
+        
+                // 4️⃣ Flatten the rotated matrix and apply it back to the left face
+                let newLeftColors = rotatedMatrix.flat();
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = newLeftColors[index]);
+        
+                // Rotate the side faces around the left face
+                const topColors = faceIndices.top.map((block) => block.style.backgroundColor);
+                const frontColors = faceIndices.front.map((block) => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map((block) => block.style.backgroundColor);
+                const backColors = faceIndices.back.map((block) => block.style.backgroundColor);
+        
+                faceIndices.top.forEach((block, index) => (block.style.backgroundColor = frontColors[index]));
+                faceIndices.front.forEach((block, index) => (block.style.backgroundColor = bottomColors[index]));
+                faceIndices.bottom.forEach((block, index) => (block.style.backgroundColor = backColors[index]));
+                faceIndices.back.forEach((block, index) => (block.style.backgroundColor = topColors[index]));
+            }
+        
+            if (laneValue > 0) {
+                const faceIndices = {
+                    top: Array.from(faceElements.top).filter((_, index) => index % cubeSize === laneValue),
+                    front: Array.from(faceElements.front).filter((_, index) => index % cubeSize === laneValue),
+                    bottom: Array.from(faceElements.bottom).filter((_, index) => index % cubeSize === laneValue),
+                    back: Array.from(faceElements.back).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)).reverse(),
+                };
+        
+                // Rotate the side layers adjacent to the left face (clockwise)
+                const topColors = faceIndices.top.map((block) => block.style.backgroundColor);
+                const frontColors = faceIndices.front.map((block) => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map((block) => block.style.backgroundColor);
+                const backColors = faceIndices.back.map((block) => block.style.backgroundColor);
+        
+                faceIndices.top.forEach((block, index) => (block.style.backgroundColor = frontColors[index]));
+                faceIndices.front.forEach((block, index) => (block.style.backgroundColor = bottomColors[index]));
+                faceIndices.bottom.forEach((block, index) => (block.style.backgroundColor = backColors[index]));
+                faceIndices.back.forEach((block, index) => (block.style.backgroundColor = topColors[index]));
+            }
+        }
+        
+        function lMovePrime(laneValue) {
+            const faceElements = {
+                top: document.querySelector(".top").children,
+                front: document.querySelector(".front").children,
+                bottom: document.querySelector(".bottom").children,
+                back: document.querySelector(".back").children,
+                left: document.querySelector(".left").children,
+            };
+            
+            if (laneValue === 0) {  
+                const faceIndices = {
+                    top: Array.from(faceElements.top).filter((_, index) => index % cubeSize === laneValue),
+                    front: Array.from(faceElements.front).filter((_, index) => index % cubeSize === laneValue),
+                    bottom: Array.from(faceElements.bottom).filter((_, index) => index % cubeSize === laneValue),
+                    back: Array.from(faceElements.back).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)).reverse(),
+                    left: Array.from(faceElements.left),
+                };
+        
+               // 1️⃣ Extract colors from the left face
+                let leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+
+                // 2️⃣ Convert the flat array into a 2D matrix
+                let leftMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    leftMatrix.push(leftColors.slice(i * cubeSize, (i + 1) * cubeSize));
+                }
+
+                // 3️⃣ Rotate the matrix 90° **counterclockwise** (fix for L' move)
+                let rotatedMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    rotatedMatrix.push([]);
+                    for (let j = 0; j < cubeSize; j++) {
+                        rotatedMatrix[i][j] = leftMatrix[cubeSize - 1 - j][i];
+                    }
+                }
+
+                // 4️⃣ Flatten the rotated matrix and apply it back to the left face
+                let newLeftColors = rotatedMatrix.flat();
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = newLeftColors[index]);
+
+        
+                // ✅ Rotate adjacent layers **clockwise**
+                const topColors = faceIndices.top.map(block => block.style.backgroundColor);
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+        
+                faceIndices.top.forEach((block, index) => (block.style.backgroundColor = backColors[index]));  // Top gets Back
+                faceIndices.back.forEach((block, index) => (block.style.backgroundColor = bottomColors[index])); // Back gets Bottom
+                faceIndices.bottom.forEach((block, index) => (block.style.backgroundColor = frontColors[index])); // Bottom gets Front
+                faceIndices.front.forEach((block, index) => (block.style.backgroundColor = topColors[index])); // Front gets Top
+            }
+        
+            if (laneValue > 0) {
+                const faceIndices = {
+                    top: Array.from(faceElements.top).filter((_, index) => index % cubeSize === laneValue),
+                    front: Array.from(faceElements.front).filter((_, index) => index % cubeSize === laneValue),
+                    bottom: Array.from(faceElements.bottom).filter((_, index) => index % cubeSize === laneValue),
+                    back: Array.from(faceElements.back).filter((_, index) => index % cubeSize === (cubeSize - 1 - laneValue)).reverse(),
+                };
+        
+                // ✅ Rotate the side layers adjacent to the left face **clockwise**
+                const topColors = faceIndices.top.map(block => block.style.backgroundColor);
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+        
+                faceIndices.top.forEach((block, index) => (block.style.backgroundColor = backColors[index]));  // Top gets Back
+                faceIndices.back.forEach((block, index) => (block.style.backgroundColor = bottomColors[index])); // Back gets Bottom
+                faceIndices.bottom.forEach((block, index) => (block.style.backgroundColor = frontColors[index])); // Bottom gets Front
+                faceIndices.front.forEach((block, index) => (block.style.backgroundColor = topColors[index])); // Front gets Top
+            }
+        }
+             
+        function uMove(laneValue) {
+            const faceElements = {
+                front: document.querySelector(".front").children,
+                right: document.querySelector(".right").children,
+                back: document.querySelector(".back").children,
+                left: document.querySelector(".left").children,
+                top: document.querySelector(".top").children,
+            };
+        
+            if (laneValue === 0) {
+                const faceIndices = {
+                    front: Array.from(faceElements.front).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    right: Array.from(faceElements.right).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    back: Array.from(faceElements.back).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    left: Array.from(faceElements.left).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    top: Array.from(faceElements.top),
+                };
+        
+                // Extract colors from the top face
+                let topColors = faceIndices.top.map(block => block.style.backgroundColor);
+                
+                // Convert the flat array into a 2D matrix
+                let topMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    topMatrix.push(topColors.slice(i * cubeSize, (i + 1) * cubeSize));
+                }
+        
+                // Rotate the matrix 90° clockwise
+                let rotatedMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    rotatedMatrix.push([]);
+                    for (let j = 0; j < cubeSize; j++) {
+                        rotatedMatrix[i][j] = topMatrix[j][cubeSize - 1 - i];
+                    }
+                }
+        
+                // Flatten and apply rotated colors to the top face
+                let newTopColors = rotatedMatrix.flat();
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = newTopColors[index]);
+        
+                // Rotate the adjacent rows (Front, Right, Back, Left)
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+        
+                faceIndices.front.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = frontColors[index]);
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = backColors[index]);
+            }
+        
+            if (laneValue > 0) {
+                const faceIndices = {
+                    front: Array.from(faceElements.front).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    right: Array.from(faceElements.right).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    back: Array.from(faceElements.back).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    left: Array.from(faceElements.left).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                };
+        
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+        
+                faceIndices.front.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = frontColors[index]);
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = backColors[index]);
+            }
+        }
+        
+          
+          // Rotate the top layer (counterclockwise)
+          function uMovePrime(laneValue) {
+            const faceElements = {
+                front: document.querySelector(".front").children,
+                right: document.querySelector(".right").children,
+                back: document.querySelector(".back").children,
+                left: document.querySelector(".left").children,
+                top: document.querySelector(".top").children,
+            };
+        
+            if (laneValue === 0) {
+                const faceIndices = {
+                    front: Array.from(faceElements.front).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    right: Array.from(faceElements.right).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    back: Array.from(faceElements.back).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    left: Array.from(faceElements.left).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    top: Array.from(faceElements.top),
+                };
+        
+                // Extract colors from the top face
+                let topColors = faceIndices.top.map(block => block.style.backgroundColor);
+        
+                // Convert the flat array into a 2D matrix
+                let topMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    topMatrix.push(topColors.slice(i * cubeSize, (i + 1) * cubeSize));
+                }
+        
+                // Rotate the matrix 90° clockwise
+                let rotatedMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    rotatedMatrix.push([]);
+                    for (let j = 0; j < cubeSize; j++) {
+                        rotatedMatrix[i][j] = topMatrix[cubeSize - 1 - j][i]; // Corrected for clockwise rotation
+                    }
+                }
+        
+                // Flatten and apply rotated colors to the top face
+                let newTopColors = rotatedMatrix.flat();
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = newTopColors[index]);
+        
+                // Rotate the adjacent rows (Front, Right, Back, Left) counterclockwise
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+        
+                faceIndices.front.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = backColors[index]);
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = frontColors[index]);
+            }
+        
+            if (laneValue > 0) {
+                const faceIndices = {
+                    front: Array.from(faceElements.front).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    right: Array.from(faceElements.right).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    back: Array.from(faceElements.back).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    left: Array.from(faceElements.left).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                };
+        
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+        
+                faceIndices.front.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = backColors[index]);
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = frontColors[index]);
+            }
+        }
+                
+          
+        // Rotate the down layer (clockwise)
+        function dMove(laneValue) {
+            const faceElements = {
+                front: document.querySelector(".front").children,
+                right: document.querySelector(".right").children,
+                back: document.querySelector(".back").children,
+                left: document.querySelector(".left").children,
+                bottom: document.querySelector(".bottom").children,
+            };
+        
+            if (laneValue === 0) {
+                const faceIndices = {
+                    front: Array.from(faceElements.front).slice((cubeSize - 1) * cubeSize, cubeSize * cubeSize),
+                    right: Array.from(faceElements.right).slice((cubeSize - 1) * cubeSize, cubeSize * cubeSize),
+                    back: Array.from(faceElements.back).slice((cubeSize - 1) * cubeSize, cubeSize * cubeSize),
+                    left: Array.from(faceElements.left).slice((cubeSize - 1) * cubeSize, cubeSize * cubeSize),
+                    bottom: Array.from(faceElements.bottom),
+                };
+        
+                // Extract colors from the bottom face
+                let bottomColors = faceIndices.bottom.map(block => block.style.backgroundColor);
+        
+                // Convert the flat array into a 2D matrix
+                let bottomMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    bottomMatrix.push(bottomColors.slice(i * cubeSize, (i + 1) * cubeSize));
+                }
+        
+                // Rotate the matrix 90° clockwise
+                let rotatedMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    rotatedMatrix.push([]);
+                    for (let j = 0; j < cubeSize; j++) {
+                        rotatedMatrix[i][j] = bottomMatrix[cubeSize - 1 - j][i];
+                    }
+                }
+        
+                // Flatten and apply rotated colors to the bottom face
+                let newBottomColors = rotatedMatrix.flat();
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = newBottomColors[index]);
+        
+                // Rotate the adjacent rows (Front, Right, Back, Left)
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+        
+                faceIndices.front.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = frontColors[index]);
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = backColors[index]);
+            }
+        
+            if (laneValue > 0) {
+                const faceIndices = {
+                    front: Array.from(faceElements.front).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    right: Array.from(faceElements.right).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    back: Array.from(faceElements.back).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    left: Array.from(faceElements.left).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                };
+        
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+        
+                faceIndices.front.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = frontColors[index]);
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = backColors[index]);
+            }
+        }
+                         
+            // Rotate the bottom (down) layer counterclockwise
+           
+        function dMovePrime(laneValue) {
+            const faceElements = {
+                front: document.querySelector(".front").children,
+                right: document.querySelector(".right").children,
+                back: document.querySelector(".back").children,
+                left: document.querySelector(".left").children,
+                bottom: document.querySelector(".bottom").children,
+            };
+    
+            if (laneValue === 0) {
+                const faceIndices = {
+                    front: Array.from(faceElements.front).slice((cubeSize - 1) * cubeSize, cubeSize * cubeSize),
+                    right: Array.from(faceElements.right).slice((cubeSize - 1) * cubeSize, cubeSize * cubeSize),
+                    back: Array.from(faceElements.back).slice((cubeSize - 1) * cubeSize, cubeSize * cubeSize),
+                    left: Array.from(faceElements.left).slice((cubeSize - 1) * cubeSize, cubeSize * cubeSize),
+                    bottom: Array.from(faceElements.bottom),
+                };
+
+                // Extract colors from the bottom face
+                let bottomColors = faceIndices.bottom.map(block => block.style.backgroundColor);
+
+                // Convert to 2D matrix
+                let bottomMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    bottomMatrix.push(bottomColors.slice(i * cubeSize, (i + 1) * cubeSize));
+                }
+
+                // ✅ Rotate bottom face CLOCKWISE (not counterclockwise)
+                // ✅ Rotate bottom face COUNTERCLOCKWISE now
+                let rotatedMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    rotatedMatrix.push([]);
+                    for (let j = 0; j < cubeSize; j++) {
+                        rotatedMatrix[i][j] = bottomMatrix[j][cubeSize - 1 - i];
+                    }
+                }
+
+                let newBottomColors = rotatedMatrix.flat();
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = newBottomColors[index]);
+
+                // ✅ Rotate side rows: Front → Right → Back → Left → Front
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+
+                faceIndices.front.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = backColors[index]);
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = frontColors[index]);
+            }
+
+            if (laneValue > 0) {
+                const faceIndices = {
+                    front: Array.from(faceElements.front).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    right: Array.from(faceElements.right).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    back: Array.from(faceElements.back).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    left: Array.from(faceElements.left).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                };
+
+                const frontColors = faceIndices.front.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+                const backColors = faceIndices.back.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+
+                faceIndices.front.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = backColors[index]);
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = frontColors[index]);
+            }
+        }
+
+        // Function to rotate 90 degrees clockwise
+        function fMove(laneValue) {
+            const faceElements = {
+                top: document.querySelector(".top").children,
+                front: document.querySelector(".front").children,
+                right: document.querySelector(".right").children,
+                left: document.querySelector(".left").children,
+                bottom: document.querySelector(".bottom").children,
+            };
+
+            if (laneValue === 0){
+                // Get the lane's row/columns on each face
+                const faceIndices = {
+                    top: Array.from(faceElements.top).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    front: Array.from(faceElements.front).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    right: Array.from(faceElements.right).filter((_, index) => index % cubeSize === laneValue),
+                    left: Array.from(faceElements.left).filter((_, index) => index % cubeSize === cubeSize - 1 - laneValue),
+                    bottom: Array.from(faceElements.bottom).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                };
+            
+                // Rotate the front face (90° clockwise) for laneValue == 0 (whole front face rotation)
+                if (laneValue === 0) {
+                    const frontColors = Array.from(faceElements.front).map((block) => block.style.backgroundColor);
+                    const newFrontColors = [...frontColors];
+                
+                    // Rotating front face in a 90° clockwise direction
+                    for (let i = 0; i < cubeSize; i++) {
+                        for (let j = 0; j < cubeSize; j++) {
+                            newFrontColors[j * cubeSize + (cubeSize - 1 - i)] = frontColors[i * cubeSize + j];
+                        }
+                    }
+                    // Apply rotated colors to the front face
+                    Array.from(faceElements.front).forEach((block, index) => {block.style.backgroundColor = newFrontColors[index];});
+                }
+            
+                // Rotate the side faces
+                const topColors = faceIndices.top.map((block) => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map((block) => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map((block) => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map((block) => block.style.backgroundColor);
+                
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = leftColors[cubeSize - 1 - index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = topColors[index]);
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = rightColors[cubeSize - 1 - index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = bottomColors[index]);
+            }
+            if (laneValue > 0) {
+                // Get the lane's row/columns on each face
+                const faceIndices = {
+                    top: Array.from(faceElements.top).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    front: Array.from(faceElements.front).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    right: Array.from(faceElements.right).filter((_, index) => index % cubeSize === laneValue),
+                    left: Array.from(faceElements.left).filter((_, index) => index % cubeSize === cubeSize - 1 - laneValue),
+                    bottom: Array.from(faceElements.bottom).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                };
+            
+                // Rotate the front face (90° clockwise)
+                const frontColors = faceIndices.front.map((block) => block.style.backgroundColor);
+                for (let i = 0; i < cubeSize; i++) {
+                    for (let j = 0; j < cubeSize; j++) {
+                        faceIndices.front[j].style.backgroundColor = frontColors[(cubeSize - 1 - i) * cubeSize + j];
+                    }
+                }
+            
+                // Rotate the side faces
+                const topColors = faceIndices.top.map((block) => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map((block) => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map((block) => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map((block) => block.style.backgroundColor);
+                
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = leftColors[cubeSize - 1 - index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = topColors[index]);
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = rightColors[cubeSize - 1 - index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = bottomColors[index]);
+            }
+        }
+      
+        // Function to rotate the front face and its adjacent side lanes 90 degrees counterclockwise
+        function fMovePrime(laneValue) {
+            if (laneValue === 0){
+                const faceElements = {
+                    top: document.querySelector(".top").children,
+                    front: document.querySelector(".front").children,
+                    right: document.querySelector(".right").children,
+                    left: document.querySelector(".left").children,
+                    bottom: document.querySelector(".bottom").children,
+                };
+            
+                // Get the lane's row/columns on each face
+                const faceIndices = {
+                    top: Array.from(faceElements.top).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    front: Array.from(faceElements.front).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    right: Array.from(faceElements.right).filter((_, index) => index % cubeSize === laneValue),
+                    left: Array.from(faceElements.left).filter((_, index) => index % cubeSize === cubeSize - 1 - laneValue),
+                    bottom: Array.from(faceElements.bottom).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                };
+            
+                // Rotate the front face (90° counterclockwise) for laneValue == 0 (whole front face rotation)
+                if (laneValue === 0) {
+                    const frontColors = Array.from(faceElements.front).map((block) => block.style.backgroundColor);
+                    const newFrontColors = [...frontColors];
+                
+                    // Rotating front face in a 90° counterclockwise direction
+                    for (let i = 0; i < cubeSize; i++) {
+                    for (let j = 0; j < cubeSize; j++) {
+                        newFrontColors[i * cubeSize + j] = frontColors[j * cubeSize + (cubeSize - 1 - i)];
+                    }
+                    }
+                
+                    // Apply rotated colors to the front face
+                    Array.from(faceElements.front).forEach((block, index) => {block.style.backgroundColor = newFrontColors[index];});
+                }
+            
+                // Rotate the side faces
+                const topColors = faceIndices.top.map((block) => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map((block) => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map((block) => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map((block) => block.style.backgroundColor);
+                
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = bottomColors[cubeSize - 1 - index]);
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = topColors[cubeSize - 1 - index]);
+            }
+            if (laneValue > 0) {
+                const faceElements = {
+                    top: document.querySelector(".top").children,
+                    front: document.querySelector(".front").children,
+                    right: document.querySelector(".right").children,
+                    left: document.querySelector(".left").children,
+                    bottom: document.querySelector(".bottom").children,
+                };
+                
+                // Get the lane's row/columns on each face
+                const faceIndices = {
+                    top: Array.from(faceElements.top).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    front: Array.from(faceElements.front).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    right: Array.from(faceElements.right).filter((_, index) => index % cubeSize === laneValue),
+                    left: Array.from(faceElements.left).filter((_, index) => index % cubeSize === cubeSize - 1 - laneValue),
+                    bottom: Array.from(faceElements.bottom).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                };
+                
+                // Rotate the side faces
+                const topColors = faceIndices.top.map((block) => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map((block) => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map((block) => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map((block) => block.style.backgroundColor);
+                
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = bottomColors[cubeSize - 1 - index]);
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = topColors[cubeSize - 1 - index]);
+            }
+        }
+          
+        function bMove(laneValue) {
+            const faceElements = {
+                top: document.querySelector(".top").children,
+                right: document.querySelector(".right").children,
+                bottom: document.querySelector(".bottom").children,
+                left: document.querySelector(".left").children,
+                back: document.querySelector(".back").children,
+            };
+        
+            if (laneValue === 0) {
+                const faceIndices = {
+                    top: Array.from(faceElements.top).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    right: Array.from(faceElements.right).filter((_, index) => index % cubeSize === cubeSize - 1 - laneValue),
+                    bottom: Array.from(faceElements.bottom).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    left: Array.from(faceElements.left).filter((_, index) => index % cubeSize === laneValue),
+                    back: Array.from(faceElements.back),
+                };
+        
+                // Extract colors from the back face
+                let backColors = faceIndices.back.map(block => block.style.backgroundColor);
+        
+                // Convert back face to 2D matrix
+                let backMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    backMatrix.push(backColors.slice(i * cubeSize, (i + 1) * cubeSize));
+                }
+        
+                // Rotate the matrix 90° clockwise
+                let rotatedBackMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    rotatedBackMatrix.push([]);
+                    for (let j = 0; j < cubeSize; j++) {
+                        rotatedBackMatrix[i][j] = backMatrix[j][cubeSize - 1 - i];
+                    }
+                }
+        
+                // Flatten and apply rotated colors to the back face
+                let newBackColors = rotatedBackMatrix.flat();
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = newBackColors[index]);
+        
+                // Rotate the adjacent rows (Top, Left, Bottom, Right)
+                const topColors = faceIndices.top.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+        
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = leftColors[cubeSize - 1 - index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = bottomColors[index]);
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = rightColors[cubeSize - 1 - index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = topColors[index]);
+            }
+        
+            if (laneValue > 0) {
+                const faceIndices = {
+                    top: Array.from(faceElements.top).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    right: Array.from(faceElements.right).filter((_, index) => index % cubeSize === cubeSize - 1 - laneValue),
+                    bottom: Array.from(faceElements.bottom).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    left: Array.from(faceElements.left).filter((_, index) => index % cubeSize === laneValue),
+                };
+        
+                // Extract colors
+                const topColors = faceIndices.top.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+        
+                // Apply color rotations
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = leftColors[cubeSize - 1 - index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = bottomColors[index]);
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = rightColors[cubeSize - 1 - index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = topColors[index]);
+            }
+        }
+        
+        function bMovePrime(laneValue) {
+            const faceElements = {
+                top: document.querySelector(".top").children,
+                left: document.querySelector(".left").children,
+                bottom: document.querySelector(".bottom").children,
+                right: document.querySelector(".right").children,
+                back: document.querySelector(".back").children,
+            };
+        
+            // If rotating the entire back face (laneValue === 0)
+            if (laneValue === 0) {
+                const faceIndices = {
+                    top: Array.from(faceElements.top).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    right: Array.from(faceElements.right).filter((_, index) => index % cubeSize === cubeSize - 1 - laneValue),
+                    bottom: Array.from(faceElements.bottom).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    left: Array.from(faceElements.left).filter((_, index) => index % cubeSize === laneValue),
+                    back: Array.from(faceElements.back),
+                };
+        
+                // Step 1: Extract colors from the back face into a 2D matrix
+                let backColors = faceIndices.back.map(block => block.style.backgroundColor);
+                let backMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    backMatrix.push(backColors.slice(i * cubeSize, (i + 1) * cubeSize));
+                }
+        
+                // Step 2: Rotate the back face **clockwise** (90°)
+                let rotatedBackMatrix = [];
+                for (let i = 0; i < cubeSize; i++) {
+                    rotatedBackMatrix.push([]);
+                    for (let j = 0; j < cubeSize; j++) {
+                        rotatedBackMatrix[i][j] = backMatrix[cubeSize - 1 - j][i];
+                    }
+                }
+        
+                // Step 3: Flatten the matrix and apply new colors to the back face
+                let newBackColors = rotatedBackMatrix.flat();
+                faceIndices.back.forEach((block, index) => block.style.backgroundColor = newBackColors[index]);
+        
+                // Step 4: Rotate the adjacent layers **counterclockwise** (corrected order)
+                const topColors = faceIndices.top.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+        
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = bottomColors[cubeSize - 1 - index]);
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = topColors[cubeSize - 1 - index]);
+            }
+        
+            // If rotating an inner layer (laneValue > 0)
+            if (laneValue > 0) {
+                const faceIndices = {
+                    top: Array.from(faceElements.top).slice(laneValue * cubeSize, (laneValue + 1) * cubeSize),
+                    left: Array.from(faceElements.left).filter((_, index) => index % cubeSize === laneValue),
+                    bottom: Array.from(faceElements.bottom).slice((cubeSize - 1 - laneValue) * cubeSize, (cubeSize - laneValue) * cubeSize),
+                    right: Array.from(faceElements.right).filter((_, index) => index % cubeSize === cubeSize - 1 - laneValue),
+                };
+        
+                const topColors = faceIndices.top.map(block => block.style.backgroundColor);
+                const rightColors = faceIndices.right.map(block => block.style.backgroundColor);
+                const bottomColors = faceIndices.bottom.map(block => block.style.backgroundColor);
+                const leftColors = faceIndices.left.map(block => block.style.backgroundColor);
+        
+                // Rotate the layer **counterclockwise** (corrected order)
+                faceIndices.top.forEach((block, index) => block.style.backgroundColor = rightColors[index]);
+                faceIndices.right.forEach((block, index) => block.style.backgroundColor = bottomColors[cubeSize - 1 - index]);
+                faceIndices.bottom.forEach((block, index) => block.style.backgroundColor = leftColors[index]);
+                faceIndices.left.forEach((block, index) => block.style.backgroundColor = topColors[cubeSize - 1 - index]);
+            }
+        }
+                                  
+        cubeSize = 0; // Global variable for cube size
+    
+        // Handle cube size change
+        function handleCubeSizeChange() {
+            cubeSize = parseInt(document.getElementById('cubeSize').value);
+            setupLaneOptions();
+        }
+    
+        // Set up valid range for lane input based on cube size
+        function setupLaneOptions() {
+            const laneInput = document.getElementById("laneInput");
+            laneInput.min = 0;
+            laneInput.max = cubeSize % 2 === 0 ? (cubeSize / 2) - 1 : Math.floor(cubeSize / 2);
+            laneInput.value = ''; // Clear previous value
+        }
+    
+        // Handle lane number entry and validate it
+        function enterLane() {
+            const laneValue = parseInt(document.getElementById("laneInput").value);
+            const min = parseInt(document.getElementById("laneInput").min);
+            const max = parseInt(document.getElementById("laneInput").max);
+            if (isNaN(laneValue) || laneValue < min || laneValue > max) {
+                alert(`Invalid lane number. Enter a value between ${min} and ${max}.`);
+                return;
+            }
+            updateActionButtonLabels(cubeSize, laneValue);
+        }
+    
+        // Update action button labels based on lane value
+        function updateActionButtonLabels(cubeSize, laneValue) {
+            const moveButtonLabels = [
+                { id: "rMoveButton", label: "R", action: () => rMove(laneValue) },
+                { id: "rpMoveButton", label: "L", action: () => lMove(laneValue) },
+                { id: "lMoveButton", label: "R'", action: () => rMovePrime(laneValue) },
+                { id: "lpMoveButton", label: "L'", action: () => lMovePrime(laneValue) },
+                { id: "uMoveButton", label: "U'", action: () => uMovePrime(laneValue) },
+                { id: "upMoveButton", label: "D'", action: () => dMovePrime(laneValue) },
+                { id: "dMoveButton", label: "U", action: () => uMove(laneValue) },
+                { id: "dpMoveButton", label: "D", action: () => dMove(laneValue) },
+                { id: "fMoveButton", label: "F", action: () => fMove(laneValue) },
+                { id: "bMoveButton", label: "F'", action: () => fMovePrime(laneValue) },
+                { id: "bpMoveButton", label: "B'", action: () => bMovePrime(laneValue) },
+                { id: "fpMoveButton", label: "B", action: () => bMove(laneValue) },
+            ];
+        
+            // Update button labels and attach correct event listeners
+            moveButtonLabels.forEach(({ id, label, action }) => {
+                const button = document.getElementById(id);
+                if (button) {
+                    button.textContent = `${label}${laneValue}`;
+                    button.onclick = action;
+                }
+            });
+        }
+    
+        function startGame() {
+            const actionButtonsContainer = document.getElementById('actionButtonsContainer');
+            actionButtonsContainer.style.display = 'block';
+    
+            const shuffle= document.getElementById('shuffleButton');
+            shuffle.style.display ='none';
+    
+            const play1= document.getElementById('playButton');
+            play1.style.display = 'none';
+        }
+    
+        function solveCube() {
+            generateCube();
+            moveCounter = 0;
+            document.getElementById('moveCounter').textContent = moveCounter;
+            const actionButtonsContainer = document.getElementById('actionButtonsContainer');
+                actionButtonsContainer.style.display = 'block';
+        }
+    
+        // Fix for shuffleCube function
+        document.addEventListener("DOMContentLoaded", () => {
+            // Place all your existing JavaScript code inside this block.
+        
+        }
+    ); 
+  </script>
+  
+<script>
+let moveCounter = 0;
+
+// Wrap original functions to increment the move counter
+function trackMove(originalFunc) {
+    return function(...args) {
+        moveCounter++;
+        document.getElementById("moveCounterBox").innerText = moveCounter;
+        return originalFunc(...args);
+    }
+}
+
+// Apply tracker to all move actions in updateActionButtonLabels
+const originalUpdateActionButtonLabels = updateActionButtonLabels;
+updateActionButtonLabels = function(cubeSize, laneValue) {
+    const moveButtonLabels = [
+        { id: "rMoveButton", label: "R", action: trackMove(() => rMove(laneValue)) },
+        { id: "rpMoveButton", label: "L", action: trackMove(() => lMove(laneValue)) },
+        { id: "lMoveButton", label: "R'", action: trackMove(() => rMovePrime(laneValue)) },
+        { id: "lpMoveButton", label: "L'", action: trackMove(() => lMovePrime(laneValue)) },
+        { id: "uMoveButton", label: "U'", action: trackMove(() => uMovePrime(laneValue)) },
+        { id: "upMoveButton", label: "D'", action: trackMove(() => dMovePrime(laneValue)) },
+        { id: "dMoveButton", label: "U", action: trackMove(() => uMove(laneValue)) },
+        { id: "dpMoveButton", label: "D", action: trackMove(() => dMove(laneValue)) },
+        { id: "fMoveButton", label: "F", action: trackMove(() => fMove(laneValue)) },
+        { id: "bMoveButton", label: "F'", action: trackMove(() => fMovePrime(laneValue)) },
+        { id: "bpMoveButton", label: "B'", action: trackMove(() => bMovePrime(laneValue)) },
+        { id: "fpMoveButton", label: "B", action: trackMove(() => bMove(laneValue)) },
+    ];
+
+    moveButtonLabels.forEach(({ id, label, action }) => {
+        const button = document.getElementById(id);
+        if (button) {
+            button.textContent = `${label}${laneValue}`;
+            button.onclick = action;
+        }
+    });
+}
+</script>
+<script>
+    
+
+    document.getElementById('shuffleButton').addEventListener('click', () => {
+        const moves = [
+            rMove, rMovePrime,
+            lMove, lMovePrime,
+            uMove, uMovePrime,
+            dMove, dMovePrime,
+            fMove, fMovePrime,
+            bMove, bMovePrime
+        ];
+    
+        const maxLane = cubeSize % 2 === 0 ? (cubeSize / 2) - 1 : Math.floor(cubeSize / 2);
+        const totalShuffles = Math.floor(Math.random() * 99) + 1;
+        const n = Math.floor(Math.random() * 99) + 1; // Random number between 1 and 100
+    
+        for (let i = 0; i < n; i++) {
+            const move = moves[Math.floor(Math.random() * moves.length)];
+            move();
+            moveCounter++;
+            document.getElementById("moveCounterBox").innerText = moveCounter;
+        }
+    });
+    </script>
+    
+
+<script>
+    let movePath = [];  // To track all moves (manual or shuffled)
+
+    function trackMove(originalFunc, label) {
+        return function(...args) {
+            moveCounter++;
+            movePath.push(label);
+            document.getElementById("moveCounterBox").innerText = moveCounter;
+            return originalFunc(...args);
+        }
+    }
+
+    updateActionButtonLabels = function(cubeSize, laneValue) {
+        const moveButtonLabels = [
+            { id: "rMoveButton", label: `R${laneValue}`, action: trackMove(() => rMove(laneValue), `R${laneValue}`) },
+            { id: "rpMoveButton", label: `L${laneValue}`, action: trackMove(() => lMove(laneValue), `L${laneValue}`) },
+            { id: "lMoveButton", label: `R'${laneValue}`, action: trackMove(() => rMovePrime(laneValue), `R'${laneValue}`) },
+            { id: "lpMoveButton", label: `L'${laneValue}`, action: trackMove(() => lMovePrime(laneValue), `L'${laneValue}`) },
+            { id: "uMoveButton", label: `U'${laneValue}`, action: trackMove(() => uMovePrime(laneValue), `U'${laneValue}`) },
+            { id: "upMoveButton", label: `D'${laneValue}`, action: trackMove(() => dMovePrime(laneValue), `D'${laneValue}`) },
+            { id: "dMoveButton", label: `U${laneValue}`, action: trackMove(() => uMove(laneValue), `U${laneValue}`) },
+            { id: "dpMoveButton", label: `D${laneValue}`, action: trackMove(() => dMove(laneValue), `D${laneValue}`) },
+            { id: "fMoveButton", label: `F${laneValue}`, action: trackMove(() => fMove(laneValue), `F${laneValue}`) },
+            { id: "bMoveButton", label: `F'${laneValue}`, action: trackMove(() => fMovePrime(laneValue), `F'${laneValue}`) },
+            { id: "bpMoveButton", label: `B'${laneValue}`, action: trackMove(() => bMovePrime(laneValue), `B'${laneValue}`) },
+            { id: "fpMoveButton", label: `B${laneValue}`, action: trackMove(() => bMove(laneValue), `B${laneValue}`) },
+        ];
+
+        moveButtonLabels.forEach(({ id, label, action }) => {
+            const button = document.getElementById(id);
+            if (button) {
+                button.textContent = label;
+                button.onclick = action;
+            }
+        });
+    }
+
+    document.getElementById('shuffleButton').addEventListener('click', () => {
+            const moves = [
+            { func: rMove, name: 'R' },
+            { func: rMovePrime, name: "R'" },
+            { func: lMove, name: 'L' },
+            { func: lMovePrime, name: "L'" },
+            { func: uMove, name: 'U' },
+            { func: uMovePrime, name: "U'" },
+            { func: dMove, name: 'D' },
+            { func: dMovePrime, name: "D'" },
+            { func: fMove, name: 'F' },
+            { func: fMovePrime, name: "F'" },
+            { func: bMove, name: 'B' },
+            { func: bMovePrime, name: "B'" },
+        ];
+
+        const maxLane = cubeSize % 2 === 0 ? (cubeSize / 2) - 1 : Math.floor(cubeSize / 2);
+        const n = Math.floor(Math.random() * 99) + 1;
+
+        for (let i = 0; i < n; i++) {
+            const moveObj = moves[Math.floor(Math.random() * moves.length)];
+            const lane = Math.floor(Math.random() * (maxLane + 1));
+            moveObj.func(lane);
+            movePath.push(`${moveObj.name}${lane}`);
+            moveCounter++;
+            document.getElementById("moveCounterBox").innerText = moveCounter;
+        }
+    });
+
+    document.getElementById("pathToSolveButton").addEventListener("click", () => {
+        if (movePath.length === 0) { console.log("No moves yet."); } else { console.log("Path to solve:", movePath.join(" → ")); }
+    });
+    document.getElementById('pathToSolveButton').addEventListener('click', () => {
+            const display = document.getElementById("movePathDisplay");
+            if (movePath.length === 0) {
+                display.innerText = "No moves yet.";
+            } else {
+                display.innerText = movePath.join(" → ");
+            }
+        });
+</script>
+</body>
+</html>
