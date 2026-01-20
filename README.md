@@ -58,13 +58,13 @@ The simulator focuses on logical cube behavior, accurate face rotations, and a c
 ## How to Run the Project
 1. **Clone the Repository**
   ```
-    git clone https://github.com/your-username/3d-rubiks-cube.git
-    cd 3d-rubiks-cube
+  git clone https://github.com/your-username/3d-rubiks-cube.git
+  cd 3d-rubiks-cube
   ```
 2. **Open in Browser**
    Simply open the HTML file:
    ```
-     index.html
+   index.html
    ```
   - No server
   - No dependencies
@@ -83,11 +83,11 @@ The simulator focuses on logical cube behavior, accurate face rotations, and a c
 ## Lane Number Rules
 - Odd-sized cube (e.g., 3×3):
     ```
-      Lane range: 0 → ⌊N/2⌋
+    Lane range: 0 → ⌊N/2⌋
     ```
 - Even-sized cube (e.g., 4×4):
     ```
-      Lane range: 0 → (N/2 − 1)
+    Lane range: 0 → (N/2 − 1)
     ```
 The system automatically validates lane input.
 
